@@ -41,6 +41,9 @@
         .btn-edit:hover { background: #e0e7ff; }
         .btn-delete { background: #fee2e2; color: #dc2626; }
         .btn-delete:hover { background: #fecaca; }
+        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .btn-primary:hover { opacity: 0.9; }
+        .loading { text-align: center; padding: 20px; color: #666; }
         .table-wrapper { max-height: 400px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 12px; margin-top: 10px; }
         .search-box { margin-bottom: 12px; }
     </style>
@@ -221,7 +224,7 @@
     let allInstruments = [];
     let services = [];
     let calibrations = [];
-    let currentDetailInstrumentId = null;
+    let currentDetailInstrumentId = null; // Track active modal
 
     let searchTerm = "";
     let filterCalPeriod = "all";
@@ -244,6 +247,7 @@
         return endDate < today;
     }
 
+    // Hämta användarens instrument baserat på referens (exakt matchning)
     function getUserInstruments() {
         if (!currentUserEmail) return [];
         const userRef = currentUserEmail.toUpperCase();
@@ -253,14 +257,16 @@
         });
     }
 
+    // Ladda data från Firebase med realtime listeners
     function loadData() {
         console.log("Laddar data från Firebase...");
         
         database.ref('instruments').on('value', snap => {
             allInstruments = [];
-            snap.forEach(child => allInstruments.push({ id: child.key, ...child.val() }));
+            snap.forEach(child => {
+                allInstruments.push({ id: child.key, ...child.val() });
+            });
             console.log("Instrument laddade:", allInstruments.length);
-            console.log("Instrument IDs:", allInstruments.map(i => ({ id: i.id, name: i.product, ref: i.reference })));
             renderInstrumentsWithFilters();
         });
         
@@ -269,22 +275,28 @@
             snap.forEach(child => services.push({ id: child.key, ...child.val() }));
             console.log("Services laddade:", services.length);
             renderInstrumentsWithFilters();
-            if (currentDetailInstrumentId) renderInstrumentDetails(currentDetailInstrumentId);
+            // Refresh modal if open
+            if (currentDetailInstrumentId) {
+                renderInstrumentDetails(currentDetailInstrumentId);
+            }
         });
         
         database.ref('calibrations').on('value', snap => {
             calibrations = [];
             snap.forEach(child => calibrations.push({ id: child.key, ...child.val() }));
             console.log("Kalibreringar laddade:", calibrations.length);
-            console.log("Kalibreringar data:", calibrations.map(c => ({ id: c.id, instrumentId: c.instrumentId, date: c.dateIso })));
             renderInstrumentsWithFilters();
-            if (currentDetailInstrumentId) renderInstrumentDetails(currentDetailInstrumentId);
+            // Refresh modal if open
+            if (currentDetailInstrumentId) {
+                renderInstrumentDetails(currentDetailInstrumentId);
+            }
         });
     }
 
     function renderInstrumentsWithFilters() {
         let instruments = getUserInstruments();
         
+        // Sökfilter
         if (searchTerm.trim()) {
             const term = searchTerm.toLowerCase();
             instruments = instruments.filter(inst => 
@@ -294,10 +306,11 @@
             );
         }
         
+        // Kalibreringsperiod-filter
         if (filterCalPeriod !== 'all') {
             const now = new Date();
             instruments = instruments.filter(inst => {
-                const instCals = calibrations.filter(c => String(c.instrumentId).trim() === String(inst.id).trim());
+                const instCals = calibrations.filter(c => c.instrumentId === inst.id);
                 if (instCals.length === 0) return filterCalPeriod === 'never';
                 const latestCal = instCals.sort((a, b) => (b.dateIso || '').localeCompare(a.dateIso || ''))[0];
                 if (!latestCal.dateIso) return filterCalPeriod === 'never';
@@ -311,9 +324,10 @@
             });
         }
         
+        // Kalibreringsstatus-filter
         if (filterCalStatus !== 'all') {
             instruments = instruments.filter(inst => {
-                const instCals = calibrations.filter(c => String(c.instrumentId).trim() === String(inst.id).trim());
+                const instCals = calibrations.filter(c => c.instrumentId === inst.id);
                 if (instCals.length === 0) return false;
                 const latestCal = instCals.sort((a, b) => (b.dateIso || '').localeCompare(a.dateIso || ''))[0];
                 if (filterCalStatus === 'passed') return latestCal.passed === true;
@@ -322,12 +336,13 @@
             });
         }
         
+        // Sortering
         if (sortOption === 'name') {
             instruments.sort((a, b) => (a.product || a.name || '').localeCompare(b.product || b.name || ''));
         } else if (sortOption === 'latestCal') {
             instruments.sort((a, b) => {
                 const getDate = (inst) => {
-                    const cals = calibrations.filter(c => String(c.instrumentId).trim() === String(inst.id).trim());
+                    const cals = calibrations.filter(c => c.instrumentId === inst.id);
                     if (!cals.length) return null;
                     const latest = cals.sort((x, y) => (y.dateIso || '').localeCompare(x.dateIso || ''))[0];
                     return latest.dateIso ? new Date(latest.dateIso) : null;
@@ -341,8 +356,8 @@
             });
         } else if (sortOption === 'calCount') {
             instruments.sort((a, b) => {
-                const countA = calibrations.filter(c => String(c.instrumentId).trim() === String(a.id).trim()).length;
-                const countB = calibrations.filter(c => String(c.instrumentId).trim() === String(b.id).trim()).length;
+                const countA = calibrations.filter(c => c.instrumentId === a.id).length;
+                const countB = calibrations.filter(c => c.instrumentId === b.id).length;
                 return countB - countA;
             });
         }
@@ -367,7 +382,7 @@
         container.innerHTML = '';
         
         instruments.forEach(inst => {
-            const instCals = calibrations.filter(c => String(c.instrumentId).trim() === String(inst.id).trim()).sort((a, b) => (b.dateIso || '').localeCompare(a.dateIso || ''));
+            const instCals = calibrations.filter(c => c.instrumentId === inst.id).sort((a, b) => (b.dateIso || '').localeCompare(a.dateIso || ''));
             const latestCal = instCals[0];
             const calCount = instCals.length;
             const ccpExpired = isCcpExpired(inst.ccpEndDate);
@@ -402,26 +417,28 @@
         const inst = allInstruments.find(i => i.id === instId);
         if (!inst) return;
         
-        console.log("🔍 Render details for instrument ID:", instId);
+        console.log("🔍 Render instrument details for ID:", instId);
         
-        // FIX: Use string comparison with trim to ensure exact match
+        // Safe ID comparison - convert both to string and trim
         const instServices = services.filter(s => {
             const match = String(s.instrumentId).trim() === String(instId).trim();
-            if (match) console.log("✅ Service match found:", s.id);
+            if (match) console.log("✅ Service match:", s.id, "instrumentId:", s.instrumentId);
             return match;
         }).sort((a, b) => new Date(b.date) - new Date(a.date));
         
         const instCals = calibrations.filter(c => {
             const match = String(c.instrumentId).trim() === String(instId).trim();
-            if (match) console.log("✅ Calibration match found:", c.id, "date:", c.dateIso);
+            if (match) console.log("✅ Calibration match:", c.id, "instrumentId:", c.instrumentId);
             return match;
         }).sort((a, b) => (b.dateIso || '').localeCompare(a.dateIso || ''));
         
-        console.log(`Found ${instServices.length} services and ${instCals.length} calibrations`);
+        console.log(`Found ${instServices.length} services and ${instCals.length} calibrations for instrument ${instId}`);
         
         const ccpExpired = isCcpExpired(inst.ccpEndDate);
+        
         const tableId = `cal-table-${instId}`;
         
+        // Tabell för kalibreringar med sökfält och scroll
         const calibrationsTable = `
             <div class="search-box">
                 <input type="text" id="calSearch-${instId}" placeholder="🔍 Filtrera kalibreringar (datum, status, anteckningar)" class="w-full p-2 border rounded-xl">
@@ -434,7 +451,7 @@
                     <tbody>
                         ${instCals.map(c => {
                             const calDate = c.dateIso ? formatDate(c.dateIso) : `${c.year}/${c.month}`;
-                            const escapedNotes = (c.notes || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                            const escapedNotes = c.notes ? c.notes.replace(/\\/g, '\\\\').replace(/'/g, "\\'") : '';
                             return `
                                 <tr>
                                     <td>${calDate} \n
@@ -450,10 +467,11 @@
                         }).join('')}
                         ${instCals.length === 0 ? '}<tr><td colspan="5" class="text-center text-gray-400 py-4">Inga kalibreringar registrerade</td></tr>' : ''}
                     </tbody>
-                 </table>
+                 \n
             </div>
         `;
         
+        // Tabell för services
         const servicesTable = `
             <div class="table-wrapper">
                 <table class="data-table">
@@ -461,15 +479,15 @@
                     <tbody>
                         ${instServices.map(s => `
                               <tr>
-                                  <td>${formatDate(s.date)}</td>
-                                  <td>${s.certificateUrl ? `<a href="${s.certificateUrl}" target="_blank" class="text-blue-500 hover:underline">📄 Visa</a>` : '-'} \n
-                                <td class="max-w-xs truncate">${s.notes || '-'} \n
-                                <td class="text-xs text-gray-500">${s.createdBy || s.created_by || '-'} \n
-                               </tr>
+                                 <td>${formatDate(s.date)}</td>
+                                 <td>${s.certificateUrl ? `<a href="${s.certificateUrl}" target="_blank" class="text-blue-500 hover:underline">📄 Visa</a>` : '-'}</td>
+                                <td class="max-w-xs truncate">${s.notes || '-'}</td>
+                                <td class="text-xs text-gray-500">${s.createdBy || s.created_by || '-'}</td>
+                              </tr>
                         `).join('')}
                         ${instServices.length === 0 ? '<tr><td colspan="4" class="text-center text-gray-400 py-4">Inga serviceregistreringar</td></tr>' : ''}
                     </tbody>
-                 </table>
+                  </table>
             </div>
         `;
         
@@ -486,6 +504,7 @@
                     <div><span class="text-xs text-gray-500">CCP Slutdatum</span><br><span class="${ccpExpired ? 'text-red-600 font-semibold' : ''}">${inst.ccpEndDate || '-'}</span></div>
                     <div><span class="text-xs text-gray-500">CCP</span><br><b>${inst.ccp || '-'} ${inst.ccpType ? `(${inst.ccpType})` : ''}</b></div>
                 </div>
+                
                 ${inst.notes ? `<div class="bg-amber-50 p-3 rounded-xl"><span class="font-semibold">📝 Anteckningar:</span> ${inst.notes}</div>` : ''}
                 
                 <div>
@@ -503,13 +522,14 @@
             </div>
         `;
         
-        // Add search functionality
+        // Lägg till sökfunktion efter att DOM är klar
         setTimeout(() => {
             const searchInput = document.getElementById(`calSearch-${instId}`);
             if (searchInput) {
-                const newSearch = searchInput.cloneNode(true);
-                searchInput.parentNode.replaceChild(newSearch, searchInput);
-                newSearch.addEventListener('input', (e) => {
+                // Remove existing listener to avoid duplicates
+                const newSearchInput = searchInput.cloneNode(true);
+                searchInput.parentNode.replaceChild(newSearchInput, searchInput);
+                newSearchInput.addEventListener('input', (e) => {
                     const filter = e.target.value.toLowerCase();
                     const table = document.getElementById(tableId);
                     if (!table) return;
@@ -594,7 +614,8 @@
                 console.log("Ny kalibrering skapad:", newRef.key);
             }
             closeModal('calibrationModal');
-            // Don't close detail modal - let Firebase refresh it
+            // Don't close detail modal - let Firebase refresh it automatically
+            // renderInstrumentDetails will be called by the on('value') listener
         } catch (error) {
             console.error("Fel vid sparande:", error);
             alert("Ett fel uppstod vid sparande: " + error.message);
@@ -606,6 +627,7 @@
             database.ref(`calibrations/${id}`).remove()
                 .then(() => {
                     console.log("Kalibrering borttagen:", id);
+                    // Don't close detail modal - let Firebase refresh it automatically
                 })
                 .catch(error => {
                     console.error("Fel vid borttagning:", error);
@@ -695,6 +717,7 @@
         auth.signOut(); 
     }
 
+    // Auth state listener
     auth.onAuthStateChanged(user => {
         if (user) {
             currentUser = user;
@@ -712,6 +735,7 @@
         }
     });
 
+    // Event listeners
     document.getElementById('loginBtn').addEventListener('click', login);
     document.getElementById('registerBtn').addEventListener('click', register);
     document.getElementById('showRegisterBtn').addEventListener('click', () => {
@@ -733,6 +757,7 @@
     document.getElementById('closeDrawerBtn').addEventListener('click', closeDrawer);
     document.getElementById('filterOverlay').addEventListener('click', closeDrawer);
 
+    // Exponera funktioner globalt
     window.openCalibrationModal = openCalibrationModal;
     window.editCalibration = editCalibration;
     window.deleteCalibration = deleteCalibration;

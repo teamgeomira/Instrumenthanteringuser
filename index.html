@@ -162,7 +162,7 @@
         <div id="instrumentsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
     </div>
 
-    <!-- Modal för service (används endast för visning, inget skapande) -->
+    <!-- Modal för service (endast visning, ingen redigering) -->
     <div id="serviceModal" class="modal">
         <div class="modal-content">
             <div class="flex justify-between items-center mb-4">
@@ -508,18 +508,21 @@
                 if (instCalibrations.length === 0) {
                     calibrationsHtml = '<div class="empty-message">Inga kalibreringsposter.</div>';
                 } else {
-                    calibrationsHtml = instCalibrations.map(c => `
-                        <div class="calibration-item" id="cal-${c.id}">
-                            <div class="item-header">
-                                <span class="item-date">${c.year}-${String(c.month).padStart(2,'0')} ${c.passed ? '✅ Godkänd' : '❌ Ej godkänd'}</span>
-                                <div class="item-actions">
-                                    <span class="delete-btn" onclick="deleteCalibration('${c.id}')">🗑️ Ta bort</span>
+                    calibrationsHtml = instCalibrations.map(c => {
+                        const calDate = c.dateIso ? new Date(c.dateIso).toLocaleDateString('sv-SE') : `${c.year}-${String(c.month).padStart(2,'0')}`;
+                        return `
+                            <div class="calibration-item" id="cal-${c.id}">
+                                <div class="item-header">
+                                    <span class="item-date">${calDate} ${c.passed ? '✅ Godkänd' : '❌ Ej godkänd'}</span>
+                                    <div class="item-actions">
+                                        <span class="delete-btn" onclick="deleteCalibration('${c.id}')">🗑️ Ta bort</span>
+                                    </div>
                                 </div>
+                                ${c.notes ? `<div class="item-notes">📝 ${escapeHtml(c.notes)}</div>` : ''}
+                                <div class="text-xs text-gray-400 mt-1">Registrerad av: ${escapeHtml(c.createdBy || c.updatedBy || 'Okänd')}</div>
                             </div>
-                            ${c.notes ? `<div class="item-notes">📝 ${escapeHtml(c.notes)}</div>` : ''}
-                            <div class="text-xs text-gray-400 mt-1">Registrerad av: ${escapeHtml(c.createdBy || c.updatedBy || 'Okänd')}</div>
-                        </div>
-                    `).join('');
+                        `;
+                    }).join('');
                 }
             }
 
@@ -607,15 +610,15 @@
             document.getElementById('calibrationForm').reset();
             document.getElementById('calInstrumentId').value = instrumentId;
             document.getElementById('calId').value = '';
-            document.getElementById('calYear').value = new Date().getFullYear();
-            document.getElementById('calDate').value = new Date().toISOString().slice(0,10);
+            const today = new Date().toISOString().slice(0, 10);
+            document.getElementById('calDate').value = today;
             document.getElementById('calPassed').checked = true;
+            document.getElementById('calNotes').value = '';
             openModal('calibrationModal');
         }
 
         async function saveCalibration(e) {
             e.preventDefault();
-            const id = document.getElementById('calId').value;
             const instrumentId = document.getElementById('calInstrumentId').value;
             const calDateRaw = document.getElementById('calDate').value;
             if (!calDateRaw) { alert('Välj datum för kalibreringen'); return; }
@@ -636,13 +639,8 @@
                 createdBy: currentUser.email
             };
 
-            if (id) {
-                const old = calibrations.find(c => c.id === id);
-                await database.ref(`calibrations/${id}`).update(data);
-            } else {
-                const newRef = database.ref('calibrations').push();
-                await newRef.set(data);
-            }
+            const newRef = database.ref('calibrations').push();
+            await newRef.set(data);
             closeModal('calibrationModal');
         }
 
@@ -801,7 +799,6 @@
         document.getElementById('exportFullBtn').addEventListener('click', exportFull);
 
         // Ta bort onödiga eventlisteners för admin-funktioner
-        // (inget annat behövs)
 
         document.addEventListener('keydown', e => {
             if (e.key === 'Escape') {

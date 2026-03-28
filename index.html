@@ -99,18 +99,24 @@
         </div>
     </div>
 
-    <!-- Huvudapplikation -->
-    <div id="mainApp" class="hidden container mx-auto px-4 py-6">
-        <header class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-2xl p-6 mb-8 flex flex-wrap justify-between items-center gap-4">
-            <div>
-                <h1 class="text-2xl font-bold">Mina Instrument</h1>
-                <p>Kalibreringar och serviceöversikt</p>
-            </div>
-            <div class="flex gap-3 items-center">
-                <span id="userName" class="bg-white/20 px-3 py-1 rounded-full"></span>
-                <button onclick="logout()" class="bg-red-500 px-3 py-1 rounded hover:bg-red-600">Logga ut</button>
-            </div>
-        </header>
+<!-- Huvudapplikation -->
+<div id="mainApp" class="hidden container mx-auto px-4 py-6">
+    <header class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-2xl p-6 mb-8 flex flex-wrap justify-between items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-bold">Mina Instrument</h1>
+            <p>Kalibreringar och serviceöversikt</p>
+        </div>
+        <div class="flex gap-3 items-center">
+            <span id="userName" class="bg-white/20 px-3 py-1 rounded-full"></span>
+            <a href="https://teamgeomira.github.io/Tidbok/" target="_blank" class="bg-blue-500 hover:bg-blue-600 transition-colors px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                Home
+            </a>
+            <button onclick="logout()" class="bg-red-500 px-3 py-1 rounded hover:bg-red-600">Logga ut</button>
+        </div>
+    </header>
 
         <!-- Sammanfattning av varningar (baseras på användarens instrument) -->
         <div id="alertSummary" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6"></div>

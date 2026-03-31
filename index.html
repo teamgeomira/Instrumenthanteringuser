@@ -19,11 +19,6 @@
         .btn-gradient-success { background: linear-gradient(135deg, #10b981, #34d399); color: white; }
         .instrument-card { border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; transition: all 0.2s; background: white; cursor: pointer; }
         .instrument-card:hover { box-shadow: 0 8px 20px rgba(0,0,0,0.1); transform: translateY(-2px); }
-        .log-entry { background: #f9fafb; border-left: 4px solid #3b82f6; margin-bottom: 12px; padding: 12px; border-radius: 8px; }
-        .log-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
-        .log-badge-create { background: #d1fae5; color: #065f46; }
-        .log-badge-update { background: #fef3c7; color: #92400e; }
-        .log-badge-delete { background: #fee2e2; color: #991b1b; }
         .report-filters { background: white; border-radius: 12px; padding: 16px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .field-group { margin-bottom: 12px; }
         .field-label { font-weight: 600; font-size: 0.875rem; margin-bottom: 4px; display: block; }
@@ -38,14 +33,14 @@
         .instrument-type-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: 600; margin-left: 8px; }
         .type-totalstation { background-color: #dbeafe; color: #1e40af; }
         .type-gps { background-color: #d1fae5; color: #065f46; }
-        .error-message { background-color: #fee2e2; color: #991b1b; padding: 8px 12px; border-radius: 8px; font-size: 0.75rem; margin-top: 8px; display: none; }
         .refresh-btn { background: none; border: none; color: #3b82f6; cursor: pointer; font-size: 0.8rem; text-decoration: underline; }
         .table-container { overflow-x: auto; margin-top: 12px; }
         .data-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
         .data-table th, .data-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
         .data-table th { background-color: #f9fafb; font-weight: 600; color: #374151; }
         .data-table tr:hover { background-color: #f9fafb; }
-        .action-btn { color: #ef4444; font-size: 0.75rem; cursor: pointer; text-decoration: underline; margin-left: 12px; }
+        .action-btn { color: #ef4444; font-size: 0.75rem; cursor: pointer; text-decoration: underline; }
+        .edit-btn { color: #f59e0b; font-size: 0.75rem; cursor: pointer; text-decoration: underline; margin-right: 12px; }
         .cert-link { color: #3b82f6; text-decoration: underline; font-size: 0.75rem; }
         .service-section-header { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; margin-bottom: 12px; }
         .service-section-header h3 { font-size: 1.125rem; font-weight: 600; margin: 0; }
@@ -61,7 +56,7 @@
         .item-date { font-weight: 600; color: #1f2937; }
         .item-actions { display: flex; gap: 8px; }
         .delete-btn { color: #ef4444; font-size: 0.75rem; cursor: pointer; text-decoration: underline; }
-        .edit-btn { color: #3b82f6; font-size: 0.75rem; cursor: pointer; text-decoration: underline; }
+        .edit-cal-btn { color: #f59e0b; font-size: 0.75rem; cursor: pointer; text-decoration: underline; }
         .item-notes { font-size: 0.875rem; color: #4b5563; margin-top: 4px; }
         .item-cert { margin-top: 6px; font-size: 0.75rem; }
         .empty-message { color: #9ca3af; font-style: italic; padding: 16px; text-align: center; }
@@ -70,6 +65,12 @@
         .status-warning { background-color: #fef3c7; color: #92400e; }
         .status-critical { background-color: #fee2e2; color: #991b1b; }
         .status-unknown { background-color: #e5e7eb; color: #374151; }
+        .toast-notification { position: fixed; bottom: 20px; right: 20px; background-color: #10b981; color: white; padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999; animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .action-buttons { display: flex; gap: 12px; align-items: center; }
     </style>
 </head>
 <body class="bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
@@ -99,26 +100,26 @@
         </div>
     </div>
 
-<!-- Huvudapplikation -->
-<div id="mainApp" class="hidden container mx-auto px-4 py-6">
-    <header class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-2xl p-6 mb-8 flex flex-wrap justify-between items-center gap-4">
-        <div>
-            <h1 class="text-2xl font-bold">Mina Instrument</h1>
-            <p>Kalibreringar och serviceöversikt</p>
-        </div>
-        <div class="flex gap-3 items-center">
-            <span id="userName" class="bg-white/20 px-3 py-1 rounded-full"></span>
-            <a href="https://teamgeomira.github.io/Tidbok/" target="_blank" class="bg-blue-500 hover:bg-blue-600 transition-colors px-3 py-1 rounded-full text-sm flex items-center gap-1">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-                Home
-            </a>
-            <button onclick="logout()" class="bg-red-500 px-3 py-1 rounded hover:bg-red-600">Logga ut</button>
-        </div>
-    </header>
+    <!-- Huvudapplikation -->
+    <div id="mainApp" class="hidden container mx-auto px-4 py-6">
+        <header class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-2xl p-6 mb-8 flex flex-wrap justify-between items-center gap-4">
+            <div>
+                <h1 class="text-2xl font-bold">Mina Instrument</h1>
+                <p>Kalibreringar och serviceöversikt</p>
+            </div>
+            <div class="flex gap-3 items-center">
+                <span id="userName" class="bg-white/20 px-3 py-1 rounded-full"></span>
+                <a href="https://teamgeomira.github.io/Tidbok/" target="_blank" class="bg-blue-500 hover:bg-blue-600 transition-colors px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    Home
+                </a>
+                <button onclick="logout()" class="bg-red-500 px-3 py-1 rounded hover:bg-red-600">Logga ut</button>
+            </div>
+        </header>
 
-        <!-- Sammanfattning av varningar (baseras på användarens instrument) -->
+        <!-- Sammanfattning av varningar -->
         <div id="alertSummary" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6"></div>
 
         <!-- Statistik -->
@@ -127,7 +128,7 @@
             <span id="instrumentCount" class="instrument-count">0 instrument</span>
         </div>
 
-        <!-- Rapportsektion (exporterar endast användarens data) -->
+        <!-- Rapportsektion -->
         <div class="report-filters mb-6">
             <h2 class="text-lg font-bold mb-3">Rapporter</h2>
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -148,7 +149,7 @@
                     <input type="date" id="reportServiceTo" class="w-full border rounded p-2">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium">Kalibrering/internet - år</label>
+                    <label class="block text-sm font-medium">Kalibrering - år</label>
                     <select id="reportCalYear" class="w-full border rounded p-2">
                         <option value="all">Alla år</option>
                         <option value="2024">2024</option>
@@ -164,11 +165,11 @@
             </div>
         </div>
 
-        <!-- Lista av instrument (endast de som tillhör användaren) -->
+        <!-- Lista av instrument -->
         <div id="instrumentsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
     </div>
 
-    <!-- Modal för service (endast visning, ingen redigering) -->
+    <!-- Modal för service (endast visning) -->
     <div id="serviceModal" class="modal">
         <div class="modal-content">
             <div class="flex justify-between items-center mb-4">
@@ -200,11 +201,11 @@
         </div>
     </div>
 
-    <!-- Modal för kalibrering (användaren kan lägga till och ta bort) -->
+    <!-- Modal för kalibrering (användaren kan lägga till, redigera och ta bort) -->
     <div id="calibrationModal" class="modal">
         <div class="modal-content">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold">Lägg till kalibrering</h2>
+                <h2 id="calibrationModalTitle" class="text-xl font-bold">Lägg till kalibrering</h2>
                 <button onclick="closeModal('calibrationModal')" class="text-gray-500 text-2xl">&times;</button>
             </div>
             <form id="calibrationForm">
@@ -229,7 +230,7 @@
         </div>
     </div>
 
-    <!-- Modal för instrumentdetaljer (användaren ser allt, kan lägga till kalibrering) -->
+    <!-- Modal för instrumentdetaljer -->
     <div id="instrumentDetailModal" class="modal">
         <div class="modal-content max-w-5xl">
             <div class="flex justify-between items-center mb-4">
@@ -260,16 +261,12 @@
         const database = firebase.database();
         const auth = firebase.auth();
 
-        // Cloudinary config (behålls för eventuell framtida användning)
-        const cloudName = 'dc1zqri3o';
-        const uploadPreset = 'instrument_certificates';
-
         // ------------------------------
         // Global state
         // ------------------------------
         let currentUser = null;
-        let allInstruments = [];     // Alla instrument från databasen
-        let userInstruments = [];    // Instrument som tillhör användaren
+        let allInstruments = [];
+        let userInstruments = [];
         let services = [];
         let calibrations = [];
         let currentInstrumentId = null;
@@ -312,7 +309,17 @@
             return { color: 'green', text: 'Godkänd', status: 'good' };
         }
 
-        // Uppdatera varningskort baserat på användarens instrument
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast-notification';
+            toast.innerHTML = message;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
         function updateAlertSummary() {
             const container = document.getElementById('alertSummary');
             let serviceOverdue = 0, serviceSoon = 0, calibrationMissing = 0, internetExpiring = 0;
@@ -350,7 +357,7 @@
         }
 
         // ------------------------------
-        // Data loading with real-time listeners (filtrera på användarens referens)
+        // Data loading
         // ------------------------------
         function loadData() {
             database.ref('instruments').on('value', snap => {
@@ -388,7 +395,6 @@
             });
         }
 
-        // Filtrera så att endast instrument där referensen matchar användarens e-post visas
         function filterUserInstruments() {
             if (!currentUser) {
                 userInstruments = [];
@@ -409,7 +415,6 @@
             return inst.product || inst.name || 'Okänt instrument';
         }
 
-        // Rendera instrumentkort (utan admin-knappar)
         function renderInstruments() {
             const container = document.getElementById('instrumentsContainer');
             container.innerHTML = '';
@@ -467,7 +472,6 @@
             });
         }
 
-        // Visa detaljerad instrumentvy (användaren kan inte redigera instrument eller lägga till service)
         function showInstrumentDetails(instId) {
             currentInstrumentId = instId;
             refreshInstrumentDetails();
@@ -491,7 +495,7 @@
             const serviceStatus = getServiceStatus(inst.next_service);
             const typeText = inst.type === 'gps' ? 'GPS' : 'Total Station';
 
-            // Bygg servicehistorik (endast visning, inga redigeringsknappar)
+            // Bygg servicehistorik
             let servicesHtml = '';
             if (instServices.length === 0) {
                 servicesHtml = '<div class="empty-message">Inga serviceregistreringar.</div>';
@@ -508,7 +512,7 @@
                 `).join('');
             }
 
-            // Bygg kalibreringshistorik (användaren kan ta bort sina egna kalibreringar)
+            // Bygg kalibreringshistorik (med redigera och ta bort)
             let calibrationsHtml = '';
             if (inst.type === 'totalstation') {
                 if (instCalibrations.length === 0) {
@@ -521,6 +525,7 @@
                                 <div class="item-header">
                                     <span class="item-date">${calDate} ${c.passed ? '✅ Godkänd' : '❌ Ej godkänd'}</span>
                                     <div class="item-actions">
+                                        <span class="edit-cal-btn" onclick="editCalibration('${c.id}')">✏️ Redigera</span>
                                         <span class="delete-btn" onclick="deleteCalibration('${c.id}')">🗑️ Ta bort</span>
                                     </div>
                                 </div>
@@ -554,13 +559,10 @@
 
             const detailHtml = `
                 <div class="space-y-4">
-                    <!-- Basic Info Section -->
+                    <!-- Basic Info Section (sin título duplicado) -->
                     <div class="bg-white rounded-lg border p-4">
-                        <div class="flex justify-between items-start mb-3">
-                            <div>
-                                <span class="instrument-type-badge ${inst.type === 'gps' ? 'type-gps' : 'type-totalstation'}">${typeText}</span>
-                                <h2 class="text-xl font-bold mt-1">${escapeHtml(getInstrumentDisplayName(inst))}</h2>
-                            </div>
+                        <div class="flex justify-end items-start mb-3">
+                            <button onclick="refreshInstrumentDetails()" class="refresh-btn">🔄 Uppdatera</button>
                         </div>
 
                         <div class="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
@@ -586,7 +588,7 @@
                         ${inst.notes ? `<div class="mt-3 p-3 bg-gray-50 rounded"><strong>Anteckningar:</strong><br>${escapeHtml(inst.notes)}</div>` : ''}
                     </div>
 
-                    <!-- Service History Section (endast visning) -->
+                    <!-- Service History Section -->
                     <div class="bg-white rounded-lg border p-4">
                         <div class="service-section-header">
                             <h3>📋 Servicehistorik (${instServices.length})</h3>
@@ -594,7 +596,7 @@
                         ${servicesHtml}
                     </div>
 
-                    <!-- Calibration History Section (användaren kan lägga till/ta bort) -->
+                    <!-- Calibration History Section -->
                     ${inst.type === 'totalstation' ? `
                     <div class="bg-white rounded-lg border p-4">
                         <div class="service-section-header">
@@ -607,12 +609,27 @@
                 </div>
             `;
 
-            document.getElementById('detailTitle').innerHTML = escapeHtml(getInstrumentDisplayName(inst));
+            // Título en el header del modal (solo una vez)
+            document.getElementById('detailTitle').innerHTML = `
+                <div class="flex items-center gap-2">
+                    <span class="instrument-type-badge ${inst.type === 'gps' ? 'type-gps' : 'type-totalstation'}">${typeText}</span>
+                    <span class="text-xl font-bold">${escapeHtml(getInstrumentDisplayName(inst))}</span>
+                </div>
+            `;
             document.getElementById('detailContent').innerHTML = detailHtml;
         }
 
-        // Kalibreringsfunktioner (användaren kan lägga till och ta bort)
+        // ------------------------------
+        // Kalibreringsfunktioner (med redigering)
+        // ------------------------------
         function addCalibration(instrumentId) {
+            // Cerrar modal de detalles si está abierto
+            const detailModal = document.getElementById('instrumentDetailModal');
+            if (detailModal && detailModal.style.display === 'block') {
+                closeModal('instrumentDetailModal');
+            }
+            
+            document.getElementById('calibrationModalTitle').innerText = 'Lägg till kalibrering';
             document.getElementById('calibrationForm').reset();
             document.getElementById('calInstrumentId').value = instrumentId;
             document.getElementById('calId').value = '';
@@ -623,8 +640,28 @@
             openModal('calibrationModal');
         }
 
+        function editCalibration(calibrationId) {
+            // Cerrar modal de detalles si está abierto
+            const detailModal = document.getElementById('instrumentDetailModal');
+            if (detailModal && detailModal.style.display === 'block') {
+                closeModal('instrumentDetailModal');
+            }
+            
+            const calibration = calibrations.find(c => c.id === calibrationId);
+            if (!calibration) return;
+            
+            document.getElementById('calibrationModalTitle').innerText = 'Redigera kalibrering';
+            document.getElementById('calId').value = calibration.id;
+            document.getElementById('calInstrumentId').value = calibration.instrumentId;
+            document.getElementById('calDate').value = calibration.dateIso || `${calibration.year}-${String(calibration.month).padStart(2,'0')}-15`;
+            document.getElementById('calPassed').checked = calibration.passed || false;
+            document.getElementById('calNotes').value = calibration.notes || '';
+            openModal('calibrationModal');
+        }
+
         async function saveCalibration(e) {
             e.preventDefault();
+            const id = document.getElementById('calId').value;
             const instrumentId = document.getElementById('calInstrumentId').value;
             const calDateRaw = document.getElementById('calDate').value;
             if (!calDateRaw) { alert('Välj datum för kalibreringen'); return; }
@@ -640,24 +677,33 @@
                 passed: document.getElementById('calPassed').checked,
                 notes: document.getElementById('calNotes').value,
                 updatedAt: new Date().toISOString(),
-                updatedBy: currentUser.email,
-                createdAt: new Date().toISOString(),
-                createdBy: currentUser.email
+                updatedBy: currentUser.email
             };
 
-            const newRef = database.ref('calibrations').push();
-            await newRef.set(data);
+            if (id) {
+                // Uppdatera befintlig kalibrering
+                await database.ref(`calibrations/${id}`).update(data);
+                showToast('✅ Kalibrering uppdaterad!');
+            } else {
+                // Skapa ny kalibrering
+                data.createdAt = new Date().toISOString();
+                data.createdBy = currentUser.email;
+                const newRef = database.ref('calibrations').push();
+                await newRef.set(data);
+                showToast('✅ Kalibrering sparad!');
+            }
             closeModal('calibrationModal');
         }
 
         function deleteCalibration(id) {
             if (confirm('Ta bort denna kalibreringspost?')) {
                 database.ref(`calibrations/${id}`).remove();
+                showToast('🗑️ Kalibrering borttagen');
             }
         }
 
         // ------------------------------
-        // Export functions (baseras på användarens instrument)
+        // Export functions
         // ------------------------------
         function exportReport() {
             const typeFilter = document.getElementById('reportTypeFilter').value;
@@ -699,13 +745,15 @@
             if (filteredCalibrations.length > 0) {
                 const calData = filteredCalibrations.map(c => {
                     const inst = filteredInstruments.find(i => String(i.id) === String(c.instrumentId));
-                    return [inst ? inst.product || inst.name : 'Okänd', c.year, c.month, c.passed ? 'Ja' : 'Nej', c.notes || ''];
+                    const calDate = c.dateIso ? new Date(c.dateIso).toLocaleDateString('sv-SE') : `${c.year}-${String(c.month).padStart(2,'0')}`;
+                    return [inst ? inst.product || inst.name : 'Okänd', calDate, c.passed ? 'Ja' : 'Nej', c.notes || ''];
                 });
-                const wsCal = XLSX.utils.aoa_to_sheet([['Instrument', 'År', 'Månad', 'Godkänd', 'Anteckningar'], ...calData]);
+                const wsCal = XLSX.utils.aoa_to_sheet([['Instrument', 'Datum', 'Godkänd', 'Anteckningar'], ...calData]);
                 XLSX.utils.book_append_sheet(wb, wsCal, 'Kalibrering');
             }
 
             XLSX.writeFile(wb, `Mina_Instrument_rapport_${new Date().toISOString().slice(0,10)}.xlsx`);
+            showToast('📊 Rapport exporterad!');
         }
 
         function exportFull() {
@@ -736,21 +784,42 @@
 
             const calData = calibrations.filter(c => userInstruments.some(inst => String(inst.id) === String(c.instrumentId))).map(c => {
                 const inst = userInstruments.find(i => String(i.id) === String(c.instrumentId));
-                return [inst ? inst.product || inst.name : 'Okänd', c.year, c.month, c.passed ? 'Ja' : 'Nej', c.notes || ''];
+                const calDate = c.dateIso ? new Date(c.dateIso).toLocaleDateString('sv-SE') : `${c.year}-${String(c.month).padStart(2,'0')}`;
+                return [inst ? inst.product || inst.name : 'Okänd', calDate, c.passed ? 'Ja' : 'Nej', c.notes || ''];
             });
-            const wsCal = XLSX.utils.aoa_to_sheet([['Instrument', 'År', 'Månad', 'Godkänd', 'Anteckningar'], ...calData]);
+            const wsCal = XLSX.utils.aoa_to_sheet([['Instrument', 'Datum', 'Godkänd', 'Anteckningar'], ...calData]);
             XLSX.utils.book_append_sheet(wb, wsCal, 'Kalibrering');
 
             XLSX.writeFile(wb, `Alla_mina_instrument_${new Date().toISOString().slice(0,10)}.xlsx`);
+            showToast('📁 All data exporterad!');
         }
 
         // ------------------------------
         // Utility functions
         // ------------------------------
-        function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
-        function formatDate(iso) { return iso ? new Date(iso).toLocaleDateString('sv-SE') : ''; }
-        function openModal(id) { document.getElementById(id).style.display = 'block'; document.body.style.overflow = 'hidden'; }
-        function closeModal(id) { document.getElementById(id).style.display = 'none'; document.body.style.overflow = 'auto'; }
+        function escapeHtml(str) { 
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m){
+                if(m==='&') return '&amp;'; 
+                if(m==='<') return '&lt;'; 
+                if(m==='>') return '&gt;'; 
+                return m;
+            }); 
+        }
+        
+        function formatDate(iso) { 
+            return iso ? new Date(iso).toLocaleDateString('sv-SE') : ''; 
+        }
+        
+        function openModal(id) { 
+            document.getElementById(id).style.display = 'block'; 
+            document.body.style.overflow = 'hidden'; 
+        }
+        
+        function closeModal(id) { 
+            document.getElementById(id).style.display = 'none'; 
+            document.body.style.overflow = 'auto'; 
+        }
 
         // ------------------------------
         // Authentication
@@ -760,6 +829,7 @@
             const pwd = document.getElementById('loginPassword').value;
             auth.signInWithEmailAndPassword(email, pwd).catch(err => showLoginMessage(err.message, true));
         }
+        
         function register() {
             const email = document.getElementById('registerEmail').value;
             const pwd = document.getElementById('registerPassword').value;
@@ -770,6 +840,7 @@
                 .then(cred => database.ref('users/' + cred.user.uid).set({ email, name, createdAt: new Date().toISOString() }))
                 .catch(err => showLoginMessage(err.message, true));
         }
+        
         function showLoginMessage(msg, isError) {
             const div = document.getElementById('loginMessage');
             div.textContent = msg;
@@ -777,7 +848,10 @@
             div.classList.remove('hidden');
             setTimeout(() => div.classList.add('hidden'), 3000);
         }
-        function logout() { auth.signOut(); }
+        
+        function logout() { 
+            auth.signOut(); 
+        }
 
         auth.onAuthStateChanged(user => {
             if (user) {
@@ -798,22 +872,35 @@
         // ------------------------------
         document.getElementById('loginBtn').addEventListener('click', login);
         document.getElementById('registerBtn').addEventListener('click', register);
-        document.getElementById('showRegisterBtn').addEventListener('click', () => { document.getElementById('loginForm').classList.add('hidden'); document.getElementById('registerForm').classList.remove('hidden'); });
-        document.getElementById('backToLoginBtn').addEventListener('click', () => { document.getElementById('loginForm').classList.remove('hidden'); document.getElementById('registerForm').classList.add('hidden'); });
+        document.getElementById('showRegisterBtn').addEventListener('click', () => { 
+            document.getElementById('loginForm').classList.add('hidden'); 
+            document.getElementById('registerForm').classList.remove('hidden'); 
+        });
+        document.getElementById('backToLoginBtn').addEventListener('click', () => { 
+            document.getElementById('loginForm').classList.remove('hidden'); 
+            document.getElementById('registerForm').classList.add('hidden'); 
+        });
         document.getElementById('calibrationForm').addEventListener('submit', saveCalibration);
         document.getElementById('exportReportBtn').addEventListener('click', exportReport);
         document.getElementById('exportFullBtn').addEventListener('click', exportFull);
-
-        // Ta bort onödiga eventlisteners för admin-funktioner
 
         document.addEventListener('keydown', e => {
             if (e.key === 'Escape') {
                 document.querySelectorAll('.modal').forEach(m => { if (m.style.display === 'block') closeModal(m.id); });
             }
         });
+        
         window.onclick = function(e) {
             if (e.target.classList.contains('modal')) closeModal(e.target.id);
         };
+        
+        // Make functions available globally
+        window.closeModal = closeModal;
+        window.logout = logout;
+        window.addCalibration = addCalibration;
+        window.editCalibration = editCalibration;
+        window.deleteCalibration = deleteCalibration;
+        window.refreshInstrumentDetails = refreshInstrumentDetails;
     </script>
 </body>
 </html>

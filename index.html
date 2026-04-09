@@ -303,6 +303,12 @@
             const today = getSwedenDate();
             const currentYear = today.getFullYear();
             const currentMonth = today.getMonth() + 1;
+            const currentDay = today.getDate();
+            
+            if (currentDay <= 25) {
+                return { color: 'green', text: 'OK (kontroll pågår)', status: 'good' };
+            }
+            
             const cal = calibrations.find(c => String(c.instrumentId) === String(instrumentId) && c.year === currentYear && c.month === currentMonth);
             if (!cal) return { color: 'red', text: 'Saknas denna månad', status: 'critical' };
             if (!cal.passed) return { color: 'red', text: 'Ej godkänd', status: 'critical' };
